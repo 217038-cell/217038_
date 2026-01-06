@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>清朝歷史與文化挑戰賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #f4f1ea;
+            background-image: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+        }
+        .qing-red { color: #b22222; }
+        .qing-gold { color: #daa520; }
+        .bg-qing-red { background-color: #b22222; }
+        .border-qing-gold { border-color: #daa520; }
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .transition-all { transition: all 0.3s ease; }
+        
+        /* 捲軸風格 */
+        .scroll-decoration::before, .scroll-decoration::after {
+            content: "";
+            display: block;
+            height: 20px;
+            background: radial-gradient(circle, #daa520 20%, transparent 20%);
+            background-size: 10px 10px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="max-w-2xl w-full bg-white rounded-lg border-4 border-double border-qing-gold p-6 md:p-10 card-shadow relative overflow-hidden">
+        <!-- 裝飾花紋 -->
+        <div class="absolute top-0 left-0 w-16 h-16 border-t-4 border-l-4 border-qing-gold opacity-30"></div>
+        <div class="absolute top-0 right-0 w-16 h-16 border-t-4 border-r-4 border-qing-gold opacity-30"></div>
+        <div class="absolute bottom-0 left-0 w-16 h-16 border-b-4 border-l-4 border-qing-gold opacity-30"></div>
+        <div class="absolute bottom-0 right-0 w-16 h-16 border-b-4 border-r-4 border-qing-gold opacity-30"></div>
+
+        <!-- 初始畫面 -->
+        <div id="start-screen" class="text-center py-10">
+            <h1 class="text-4xl md:text-5xl font-bold qing-red mb-4">大清歷史百科挑戰</h1>
+            <p class="text-gray-600 mb-8 text-lg">考驗您對清朝歷代皇帝、文化、飲食與幣制的了解。</p>
+            <div class="mb-10">
+                <span class="inline-block p-4 border-2 border-qing-gold rounded-full">
+                    <svg class="w-12 h-12 qing-gold" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12V12a1 1 0 00.12.474l.114.213c.124.232.332.417.58.52l4 1.667a1.001 1.001 0 00.772 0l4-1.667c.248-.103.456-.288.58-.52l.115-.213A1 1 0 0015 12v-1.88l1.69-.724a1 1 0 011.066 1.69l-7 3a1 1 0 01-.788 0l-7-3a1 1 0 011.066-1.69z"></path>
+                    </svg>
+                </span>
+            </div>
+            <button onclick="quizApp.start()" class="bg-qing-red text-white px-10 py-3 rounded-full text-xl font-bold hover:bg-red-800 transition-all transform hover:scale-105 shadow-lg">
+                進入殿試
+            </button>
+        </div>
+
+        <!-- 測驗內容 -->
+        <div id="quiz-screen" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <span id="progress-text" class="text-qing-red font-bold">問題 1/10</span>
+                <div class="w-32 h-2 bg-gray-200 rounded-full">
+                    <div id="progress-bar" class="h-full bg-qing-red rounded-full transition-all" style="width: 10%"></div>
+                </div>
+            </div>
+            
+            <h2 id="question-text" class="text-2xl font-bold mb-8 text-gray-800 leading-relaxed">題目載入中...</h2>
+            
+            <div id="options-container" class="space-y-4 mb-8">
+                <!-- 選項會在此動態生成 -->
+            </div>
+
+            <div id="feedback" class="hidden p-4 rounded-lg mb-6 animate-fade">
+                <p id="feedback-message" class="font-bold mb-1"></p>
+                <p id="feedback-rationale" class="text-sm text-gray-700"></p>
+            </div>
+
+            <button id="next-btn" onclick="quizApp.nextQuestion()" class="hidden w-full bg-qing-gold text-white py-3 rounded-lg font-bold hover:opacity-90 transition-all shadow-md">
+                下一題
+            </button>
+        </div>
+
+        <!-- 結果畫面 -->
+        <div id="result-screen" class="hidden text-center py-10">
+            <h2 class="text-3xl font-bold qing-red mb-2">殿試放榜</h2>
+            <div class="text-6xl font-bold qing-gold mb-6" id="final-score">0</div>
+            <p class="text-xl mb-4" id="rank-title">稱號載入中...</p>
+            <p class="text-gray-600 mb-8" id="rank-description"></p>
+            
+            <div class="space-x-4">
+                <button onclick="location.reload()" class="bg-qing-red text-white px-8 py-2 rounded-lg font-bold hover:bg-red-800 transition-all">
+                    再考一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                q: "清朝入關後的第一位皇帝是哪一位？",
+                options: ["順治皇帝", "康熙皇帝", "皇太極", "努爾哈赤"],
+                correct: 0,
+                rationale: "順治皇帝於1644年清軍入關後遷都北京，成為清朝統治中原的首位皇帝。"
+            },
+            {
+                q: "清朝在位時間最長（61年），且奠定了「康乾盛世」基礎的皇帝是？",
+                options: ["乾隆皇帝", "康熙皇帝", "雍正皇帝", "道光皇帝"],
+                correct: 1,
+                rationale: "康熙皇帝在位長達61年，平定三藩並收復台灣，為盛世打下堅實根基。"
+            },
+            {
+                q: "下列哪一部文學作品被認為是清朝小說發展的最高峰？",
+                options: ["《西遊記》", "《三國演義》", "《紅樓夢》", "《水滸傳》"],
+                correct: 2,
+                rationale: "《紅樓夢》以精緻筆觸描寫家族興衰，被公認為清代乃至中國古典小說的巔峰。"
+            },
+            {
+                q: "清朝為了加強思想控制，多次發動了什麼樣的行動來限制言論自由？",
+                options: ["焚書坑儒", "文字獄", "洋務運動", "戊戌變法"],
+                correct: 1,
+                rationale: "清朝統治者為維護權威，常從詩文中摘取隻字片語加以羅織罪名，稱為「文字獄」。"
+            },
+            {
+                q: "飲食方面，清朝大量推廣了哪些美洲作物，有效支撐了人口大幅增長？",
+                options: ["小麥與稻米", "玉米、番薯與馬鈴薯", "茶葉與絲綢", "大豆與高粱"],
+                correct: 1,
+                rationale: "玉米、番薯等作物適應性強且產量高，解決了糧食短缺問題。"
+            },
+            {
+                q: "「滿漢全席」最初設計的主要政治目的為何？",
+                options: ["慶祝皇帝壽辰", "緩解滿漢官員之間的矛盾", "展示烹飪器具", "應對外交官"],
+                correct: 1,
+                rationale: "滿漢全席融合兩族菜系，象徵滿漢一家，有助於族群融合與朝廷和諧。"
+            },
+            {
+                q: "清朝的幣制主要實行什麼制度？",
+                options: ["全國僅統一使用紙幣", "銀錢並行（大額銀、小額錢）", "統一鑄造標準重量銀幣", "禁止外國銀元進入"],
+                correct: 1,
+                rationale: "清朝長期採用銀兩與銅錢並行的制度，銀兩秤重使用，銅錢計數使用。"
+            },
+            {
+                q: "晚清時期，誰在兩廣總督任內率先引進機器鑄造「光緒元寶」（龍洋）？",
+                options: ["和珅", "張之洞", "慈禧太后", "溥儀"],
+                correct: 1,
+                rationale: "張之洞引進西方技術鑄幣，這是我國貨幣由手工業轉向現代工業的重要里程碑。"
+            },
+            {
+                q: "哪一位皇帝在位期間因鴉片戰爭戰敗簽署了《南京條約》？",
+                options: ["嘉慶皇帝", "道光皇帝", "光緒皇帝", "咸豐皇帝"],
+                correct: 1,
+                rationale: "道光皇帝在位時爆發第一次鴉片戰爭，被迫簽署近代史上第一個不平等條約。"
+            },
+            {
+                q: "乾隆年間徽班進京後，最終孕育出了哪一種被譽為「國粹」的藝術形式？",
+                options: ["粵劇", "崑曲", "京劇", "川劇"],
+                correct: 2,
+                rationale: "徽班進京後吸收漢調、崑曲等精華，逐漸演變成熟為現今的京劇。"
+            }
+        ];
+
+        const quizApp = {
+            currentIndex: 0,
+            score: 0,
+            answered: false,
+
+            start() {
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+                this.loadQuestion();
+            },
+
+            loadQuestion() {
+                this.answered = false;
+                const qData = quizData[this.currentIndex];
+                
+                // UI更新
+                document.getElementById('progress-text').innerText = `問題 ${this.currentIndex + 1}/${quizData.length}`;
+                document.getElementById('progress-bar').style.width = `${((this.currentIndex + 1) / quizData.length) * 100}%`;
+                document.getElementById('question-text').innerText = qData.q;
+                
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+                
+                qData.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-qing-gold hover:bg-orange-50 transition-all font-medium";
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleAnswer(index, btn);
+                    container.appendChild(btn);
+                });
+
+                document.getElementById('feedback').classList.add('hidden');
+                document.getElementById('next-btn').classList.add('hidden');
+            },
+
+            handleAnswer(selectedIndex, btnElement) {
+                if (this.answered) return;
+                this.answered = true;
+
+                const qData = quizData[this.currentIndex];
+                const isCorrect = selectedIndex === qData.correct;
+                
+                if (isCorrect) {
+                    this.score += 10;
+                    btnElement.classList.remove('border-gray-200');
+                    btnElement.classList.add('border-green-500', 'bg-green-50');
+                    document.getElementById('feedback-message').innerText = "✔️ 答對了！";
+                    document.getElementById('feedback-message').className = "font-bold mb-1 text-green-600";
+                } else {
+                    btnElement.classList.remove('border-gray-200');
+                    btnElement.classList.add('border-red-500', 'bg-red-50');
+                    document.getElementById('feedback-message').innerText = "❌ 答錯了！";
+                    document.getElementById('feedback-message').className = "font-bold mb-1 text-red-600";
+                }
+
+                document.getElementById('feedback-rationale').innerText = qData.rationale;
+                document.getElementById('feedback').classList.remove('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+
+                // 禁用其他按鈕
+                const buttons = document.getElementById('options-container').getElementsByTagName('button');
+                for (let b of buttons) {
+                    b.classList.add('cursor-default');
+                    if (qData.options.indexOf(b.innerText) === qData.correct) {
+                        b.classList.add('border-green-500', 'bg-green-50');
+                    }
+                }
+            },
+
+            nextQuestion() {
+                this.currentIndex++;
+                if (this.currentIndex < quizData.length) {
+                    this.loadQuestion();
+                } else {
+                    this.showResults();
+                }
+            },
+
+            showResults() {
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-score').innerText = this.score;
+                
+                let title = "";
+                let desc = "";
+
+                if (this.score === 100) {
+                    title = "狀元公 (博古通今)";
+                    desc = "您對清朝歷史了若指掌，簡直是現代的史官！";
+                } else if (this.score >= 80) {
+                    title = "榜眼 (學識淵博)";
+                    desc = "表現優異！您對清代文化有很深的理解。";
+                } else if (this.score >= 60) {
+                    title = "探花 (及第士子)";
+                    desc = "及格了！您對清朝有一定的基礎認識。";
+                } else {
+                    title = "名落孫山 (再接再厲)";
+                    desc = "看來還需要多研讀歷史，下次一定能金榜題名！";
+                }
+
+                document.getElementById('rank-title').innerText = title;
+                document.getElementById('rank-description').innerText = desc;
+            }
+        };
+    </script>
+</body>
+</html>
